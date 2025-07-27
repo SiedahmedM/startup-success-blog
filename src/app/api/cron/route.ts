@@ -7,9 +7,20 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const job = searchParams.get('job')
-    const sources = searchParams.get('sources')?.split(',') || []
+    const sources = searchParams.get('sources')?.split(',') || ['product_hunt', 'hacker_news', 'github']
+
+    // If no job parameter (Vercel cron call), run automatic collection
+    if (!job) {
+      console.log('🔄 Vercel cron triggered - starting automated data collection')
+      const result = await orchestrator.runManualCollection(sources)
+      return NextResponse.json({
+        message: 'Automated data collection completed',
+        ...result
+      })
+    }
 
     if (job === 'manual') {
+      console.log('🔄 Manual data collection triggered')
       const result = await orchestrator.runManualCollection(sources)
       return NextResponse.json(result)
     }

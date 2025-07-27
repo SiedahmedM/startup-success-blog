@@ -1,0 +1,101 @@
+import { SuccessStory } from './types'
+
+export const mockFeaturedStory: SuccessStory = {
+  id: '1',
+  startup_id: '1',
+  title: 'TechFlow Raises $15M Series A to Revolutionize Workplace Automation',
+  content: 'TechFlow, a startup that began in a San Francisco garage, has successfully raised $15M in Series A funding...',
+  summary: 'TechFlow\'s journey from a struggling task manager to a $15M Series A success story showcases the importance of pivoting and customer feedback.',
+  story_type: 'funding',
+  confidence_score: 0.92,
+  sources: [{ type: 'mock', url: 'https://example.com' }],
+  tags: ['ai', 'automation', 'series-a', 'pivot'],
+  featured: true,
+  published_at: new Date().toISOString(),
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  ai_generated: true,
+  view_count: 1250,
+  startup: {
+    id: '1',
+    name: 'TechFlow',
+    description: 'AI-powered workflow automation platform',
+    website_url: 'https://techflow.example.com',
+    founded_date: '2021-03-15',
+    funding_amount: 15000000,
+    funding_stage: 'series_a',
+    employee_count: 45,
+    location: 'San Francisco, CA',
+    industry: 'SaaS',
+    tags: ['ai', 'automation', 'productivity'],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+}
+
+export const mockRecentStories: SuccessStory[] = [
+  {
+    id: '2',
+    startup_id: '2',
+    title: 'EcoCart Hits 500K Users While Building a More Sustainable Future',
+    content: 'What started as a weekend project by environmental science graduate Sarah Chen...',
+    summary: 'EcoCart\'s grassroots approach to building a sustainable marketplace led to 500K users and $8.5M in funding.',
+    story_type: 'milestone',
+    confidence_score: 0.88,
+    sources: [{ type: 'mock', url: 'https://example.com' }],
+    tags: ['sustainability', 'marketplace', 'bootstrap'],
+    featured: false,
+    published_at: new Date(Date.now() - 86400000).toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ai_generated: true,
+    view_count: 890,
+    startup: {
+      id: '2',
+      name: 'EcoCart',
+      description: 'Sustainable e-commerce platform',
+      website_url: 'https://ecocart.example.com',
+      founded_date: '2020-08-22',
+      funding_amount: 8500000,
+      funding_stage: 'seed',
+      employee_count: 28,
+      location: 'Austin, TX',
+      industry: 'E-commerce',
+      tags: ['sustainability', 'e-commerce'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  },
+  {
+    id: '3',
+    startup_id: '3',
+    title: 'MindfulAI\'s $25M Series B Signals Mental Health Tech Boom',
+    content: 'Dr. Michael Rodriguez and his team at MindfulAI experienced the startup emotional rollercoaster...',
+    summary: 'MindfulAI pivoted from replacing therapists to augmenting them, leading to $25M Series B.',
+    story_type: 'funding',
+    confidence_score: 0.91,
+    sources: [{ type: 'mock', url: 'https://example.com' }],
+    tags: ['healthtech', 'ai', 'mental-health'],
+    featured: false,
+    published_at: new Date(Date.now() - 172800000).toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ai_generated: true,
+    view_count: 1102,
+    startup: {
+      id: '3',
+      name: 'MindfulAI',
+      description: 'Mental health platform using AI',
+      website_url: 'https://mindfulai.example.com',
+      founded_date: '2022-01-10',
+      funding_amount: 25000000,
+      funding_stage: 'series_b',
+      employee_count: 85,
+      location: 'New York, NY',
+      industry: 'HealthTech',
+      tags: ['mental-health', 'ai'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  }
+]

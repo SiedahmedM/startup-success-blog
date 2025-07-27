@@ -3,6 +3,17 @@ import { supabase } from '@/lib/supabase/client'
 
 export async function GET() {
   try {
+    if (!supabase) {
+      return NextResponse.json({
+        totalStartups: 0,
+        totalFunding: 0,
+        avgTimeToSuccess: 0,
+        pivotSuccessRate: 0,
+        totalStories: 0,
+        avgConfidence: 0
+      })
+    }
+    
     // Get total startups
     const { count: totalStartups } = await supabase
       .from('startups')

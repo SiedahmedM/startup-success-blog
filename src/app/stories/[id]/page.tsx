@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { SuccessStory } from '@/lib/types'
+import { mockFeaturedStory, mockRecentStories } from '@/lib/mock-data'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { formatDistanceToNow, format } from 'date-fns'
@@ -22,6 +23,13 @@ export const revalidate = 3600
 // }
 
 async function getStory(id: string): Promise<SuccessStory | null> {
+  if (!supabase) {
+    // Return a mock story based on the ID
+    if (id === '1') return mockFeaturedStory
+    if (id === '2' || id === '3') return mockRecentStories.find(s => s.id === id) || null
+    return null
+  }
+  
   const { data } = await supabase
     .from('success_stories')
     .select(`
@@ -43,6 +51,10 @@ async function getStory(id: string): Promise<SuccessStory | null> {
 
 async function getRelatedStories(currentId: string, tags: string[]): Promise<SuccessStory[]> {
   if (!tags || tags.length === 0) return []
+  if (!supabase) {
+    // Return mock related stories
+    return mockRecentStories.filter(s => s.id !== currentId).slice(0, 3)
+  }
 
   const { data } = await supabase
     .from('success_stories')

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { SuccessStory } from '@/lib/types'
+import { mockRecentStories } from '@/lib/mock-data'
 import StoryCard from '@/components/StoryCard'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -10,6 +11,13 @@ async function getAllStories(
   category?: string,
   search?: string
 ): Promise<{ stories: SuccessStory[]; totalCount: number }> {
+  if (!supabase) {
+    return {
+      stories: mockRecentStories,
+      totalCount: mockRecentStories.length
+    }
+  }
+  
   let query = supabase
     .from('success_stories')
     .select(`

@@ -1,14 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
     ignoreBuildErrors: true,
   },
   images: {
@@ -38,8 +33,8 @@ const nextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
+  serverExternalPackages: ['playwright', 'puppeteer'], // <-- Moved here
   experimental: {
-    serverComponentsExternalPackages: ['playwright', 'puppeteer'],
     optimizeCss: true,
     scrollRestoration: true,
   },
@@ -49,7 +44,6 @@ const nextConfig = {
   httpAgentOptions: {
     keepAlive: true,
   },
-  // Enable ISR for story pages
   async headers() {
     return [
       {

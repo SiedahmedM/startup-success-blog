@@ -5,6 +5,9 @@
     },
     "src/app/api/cron/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/trigger-collection/route.ts": {
+      "maxDuration": 300
     }
   },
   "crons": [

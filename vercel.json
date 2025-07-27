@@ -1,18 +1,4 @@
 {
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key",
-    "OPENAI_API_KEY": "@openai-api-key",
-    "PRODUCT_HUNT_ACCESS_TOKEN": "@product-hunt-token",
-    "GITHUB_TOKEN": "@github-token"
-  },
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
-      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key"
-    }
-  },
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30

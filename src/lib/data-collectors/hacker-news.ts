@@ -142,21 +142,42 @@ export class HackerNewsCollector {
   }
 
   isSuccessCandidate(story: HackerNewsPost): boolean {
-    const successKeywords = [
-      'raised', 'funding', 'series', 'million', 'billion', 'acquired',
-      'acquisition', 'ipo', 'unicorn', 'growth', 'milestone', 'success',
-      'profitable', 'revenue', 'users', 'customers', 'exit'
-    ]
-
-    const hasHighScore = story.score > 100
-    const hasEngagement = story.descendants > 50
-    
     const text = `${story.title} ${story.text || ''}`.toLowerCase()
-    const hasSuccessKeywords = successKeywords.some(keyword => 
-      text.includes(keyword)
-    )
-
-    return (hasHighScore || hasEngagement) && hasSuccessKeywords
+    
+    // Strong funding indicators (require significant funding)
+    const fundingKeywords = [
+      'raised', 'funding', 'series a', 'series b', 'series c', 'seed round',
+      'million', 'billion', '$', 'investment', 'investors', 'venture capital', 'vc'
+    ]
+    
+    // Major success indicators
+    const majorSuccessKeywords = [
+      'acquired', 'acquisition', 'ipo', 'unicorn', 'exit', 'valuation', 
+      'profitable', 'revenue', 'growth'
+    ]
+    
+    // Scale indicators
+    const scaleKeywords = [
+      'users', 'customers', 'enterprise', 'expansion', 'international'
+    ]
+    
+    const hasFundingIndicators = fundingKeywords.some(keyword => text.includes(keyword))
+    const hasMajorSuccess = majorSuccessKeywords.some(keyword => text.includes(keyword))
+    const hasScaleIndicators = scaleKeywords.some(keyword => text.includes(keyword))
+    
+    // Require high engagement for quality filtering
+    const hasHighScore = story.score > 150  // Increased threshold
+    const hasHighEngagement = story.descendants > 75  // Increased threshold
+    
+    // Check if story is recent (within last 3 years)
+    const storyDate = new Date(story.time * 1000) // HN time is in seconds
+    const threeYearsAgo = new Date()
+    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3)
+    const isRecent = storyDate > threeYearsAgo
+    
+    // Must be recent, have high engagement, AND show funding/success indicators
+    return isRecent && (hasHighScore || hasHighEngagement) && 
+           (hasFundingIndicators || hasMajorSuccess || hasScaleIndicators)
   }
 
   extractCompanyName(story: HackerNewsPost): string | null {

@@ -434,15 +434,40 @@ export class ProductHuntCollector {
   }
 
   isSuccessCandidate(post: ProductHuntPost): boolean {
-    const hasHighEngagement = post.votes_count > 50 || post.comments_count > 10
-    const hasSuccessKeywords = [
-      'raised', 'funding', 'series', 'million', 'growth', 'users',
-      'revenue', 'milestone', 'acquisition', 'unicorn', 'IPO', 'success'
-    ].some(keyword => 
-      post.description.toLowerCase().includes(keyword) ||
-      post.tagline.toLowerCase().includes(keyword)
-    )
-
-    return hasHighEngagement || hasSuccessKeywords
+    const content = `${post.description} ${post.tagline}`.toLowerCase()
+    
+    // Strong funding indicators (require significant funding)
+    const fundingKeywords = [
+      'raised', 'funding', 'series a', 'series b', 'series c', 'seed round',
+      'million', '$', 'investment', 'investors', 'venture capital', 'vc'
+    ]
+    
+    // Success metrics that indicate scale
+    const scaleKeywords = [
+      'users', 'customers', 'revenue', 'growth', 'acquisition', 'unicorn', 
+      'ipo', 'exit', 'valuation', 'profitable', 'enterprise'
+    ]
+    
+    // Recent success indicators
+    const recentSuccessKeywords = [
+      'milestone', 'breakthrough', 'launched', 'expansion', 'partnership',
+      'featured', 'award', 'recognition'
+    ]
+    
+    const hasFundingIndicators = fundingKeywords.some(keyword => content.includes(keyword))
+    const hasScaleIndicators = scaleKeywords.some(keyword => content.includes(keyword))
+    const hasRecentSuccess = recentSuccessKeywords.some(keyword => content.includes(keyword))
+    
+    // Must have high engagement AND funding/scale indicators
+    const hasHighEngagement = post.votes_count > 100 || post.comments_count > 15
+    
+    // Check if post is recent (within last 2 years)
+    const postDate = new Date(post.featured_at)
+    const twoYearsAgo = new Date()
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
+    const isRecent = postDate > twoYearsAgo
+    
+    // Must meet multiple criteria for higher quality filtering
+    return isRecent && hasHighEngagement && (hasFundingIndicators || (hasScaleIndicators && hasRecentSuccess))
   }
 }

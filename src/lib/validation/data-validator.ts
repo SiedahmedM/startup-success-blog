@@ -38,6 +38,14 @@ export class DataValidator {
     await this.webScraper.init()
 
     try {
+      // First check funding and timing requirements
+      await this.validateFundingRequirements(startupData, result)
+      
+      // If funding requirements not met, reject immediately
+      if (result.finalVerdict === 'rejected') {
+        return result
+      }
+      
       await this.validateBasicInfo(startupData, result)
       await this.crossReferenceData(startupData, sources, result)
       await this.validateFundingClaims(startupData, result)
@@ -55,6 +63,75 @@ export class DataValidator {
     }
 
     return result
+  }
+
+  private async validateFundingRequirements(
+    startupData: any,
+    result: ValidationResult
+  ): Promise<void> {
+    console.log('🔍 Validating funding requirements for:', startupData.name)
+    
+    // Check funding date (must be within last 4 years)
+    const fourYearsAgo = new Date()
+    fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4)
+    
+    let fundingDate: Date | null = null
+    
+    // Try to parse funding date from various fields
+    if (startupData.founded_date) {
+      fundingDate = new Date(startupData.founded_date)
+    } else if (startupData.last_funding_date) {
+      fundingDate = new Date(startupData.last_funding_date)
+    } else if (startupData.funding_date) {
+      fundingDate = new Date(startupData.funding_date)
+    }
+    
+    // If no funding date found, try to estimate from sources
+    if (!fundingDate && startupData.featured_at) {
+      fundingDate = new Date(startupData.featured_at)
+    }
+    
+    // Check if funding is within last 4 years
+    if (!fundingDate || fundingDate < fourYearsAgo) {
+      result.issues.push(`Startup not funded within last 4 years (found: ${fundingDate ? fundingDate.getFullYear() : 'unknown'})`)
+      result.finalVerdict = 'rejected'
+      result.confidence = 0
+      console.log('❌ Rejected: Too old or no funding date')
+      return
+    }
+    
+    // Check minimum valuation/funding amount (at least $500K)
+    const minFunding = 500000 // $500K
+    let fundingAmount = 0
+    
+    if (startupData.funding_amount) {
+      fundingAmount = parseInt(startupData.funding_amount)
+    } else if (startupData.valuation) {
+      fundingAmount = parseInt(startupData.valuation)
+    } else if (startupData.total_funding) {
+      fundingAmount = parseInt(startupData.total_funding)
+    }
+    
+    // If no funding amount specified, try to estimate from stage
+    if (fundingAmount === 0 && startupData.funding_stage) {
+      const stage = startupData.funding_stage.toLowerCase()
+      if (stage.includes('seed')) fundingAmount = 1000000 // Assume $1M for seed
+      else if (stage.includes('series_a') || stage.includes('series a')) fundingAmount = 5000000 // Assume $5M for Series A
+      else if (stage.includes('series_b') || stage.includes('series b')) fundingAmount = 15000000 // Assume $15M for Series B
+    }
+    
+    if (fundingAmount < minFunding) {
+      result.issues.push(`Funding amount below minimum threshold ($${(fundingAmount/1000000).toFixed(1)}M < $0.5M required)`)
+      result.finalVerdict = 'rejected'
+      result.confidence = 0
+      console.log('❌ Rejected: Insufficient funding amount')
+      return
+    }
+    
+    console.log('✅ Funding requirements met:', {
+      fundingDate: fundingDate.getFullYear(),
+      fundingAmount: `$${(fundingAmount/1000000).toFixed(1)}M`
+    })
   }
 
   private async validateBasicInfo(

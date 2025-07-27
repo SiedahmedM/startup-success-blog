@@ -35,7 +35,6 @@ const nextConfig = {
   },
   serverExternalPackages: ['playwright', 'puppeteer'], // <-- Moved here
   experimental: {
-    optimizeCss: true,
     scrollRestoration: true,
   },
   compress: true,

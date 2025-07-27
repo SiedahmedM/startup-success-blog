@@ -3,18 +3,30 @@ import { DataCollectionOrchestrator } from '@/lib/jobs/data-collection-orchestra
 
 const orchestrator = new DataCollectionOrchestrator()
 
+// Allow Vercel cron jobs to access this endpoint
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
+    // Check for Vercel cron secret or bypass auth for cron
+    const authHeader = request.headers.get('authorization')
+    const vercelCronSecret = request.headers.get('x-vercel-cron-signature')
+    const isVercelCron = !!vercelCronSecret
+    
+    console.log('🔄 Cron endpoint accessed', { isVercelCron, hasAuth: !!authHeader })
+    
     const { searchParams } = new URL(request.url)
     const job = searchParams.get('job')
     const sources = searchParams.get('sources')?.split(',') || ['product_hunt', 'hacker_news', 'github']
 
     // If no job parameter (Vercel cron call), run automatic collection
-    if (!job) {
+    if (!job || isVercelCron) {
       console.log('🔄 Vercel cron triggered - starting automated data collection')
       const result = await orchestrator.runManualCollection(sources)
       return NextResponse.json({
         message: 'Automated data collection completed',
+        timestamp: new Date().toISOString(),
         ...result
       })
     }

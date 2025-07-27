@@ -4,6 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase/client'
 
 const orchestrator = new DataCollectionOrchestrator()
 
+// Allow public access for testing
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 export async function POST() {
   try {
     if (!supabaseAdmin) {

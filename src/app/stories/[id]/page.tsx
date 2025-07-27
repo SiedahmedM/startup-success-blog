@@ -5,6 +5,22 @@ import Footer from '@/components/Footer'
 import { formatDistanceToNow, format } from 'date-fns'
 import { notFound } from 'next/navigation'
 
+// Enable ISR with 1 hour revalidation
+export const revalidate = 3600
+
+// Generate static params for the most popular stories
+export async function generateStaticParams() {
+  const { data: stories } = await supabase
+    .from('success_stories')
+    .select('id')
+    .order('view_count', { ascending: false })
+    .limit(20)
+
+  return stories?.map((story) => ({
+    id: story.id,
+  })) || []
+}
+
 async function getStory(id: string): Promise<SuccessStory | null> {
   const { data } = await supabase
     .from('success_stories')

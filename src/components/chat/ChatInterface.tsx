@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Loader2, Heart, Lightbulb, Users, DollarSign } from 'lucide-react'
 
 interface ChatMessage {
   id: string
@@ -25,10 +24,10 @@ interface MentorResponse {
 }
 
 const QUICK_PROMPTS = [
-  { text: "I want to quit", icon: Heart, color: "from-red-500 to-pink-500" },
-  { text: "No users yet", icon: Users, color: "from-blue-500 to-cyan-500" },
-  { text: "Out of money", icon: DollarSign, color: "from-green-500 to-emerald-500" },
-  { text: "Feeling alone", icon: Lightbulb, color: "from-purple-500 to-indigo-500" }
+  { text: "I want to quit", icon: 'Heart', color: "from-red-500 to-pink-500" },
+  { text: "No users yet", icon: 'Users', color: "from-blue-500 to-cyan-500" },
+  { text: "Out of money", icon: 'DollarSign', color: "from-green-500 to-emerald-500" },
+  { text: "Feeling alone", icon: 'Lightbulb', color: "from-purple-500 to-indigo-500" }
 ]
 
 export default function ChatInterface() {
@@ -276,7 +275,20 @@ export default function ChatInterface() {
           <p className="text-xs text-gray-400 mb-3 text-center">Quick prompts to get started:</p>
           <div className="grid grid-cols-2 gap-2">
             {QUICK_PROMPTS.map((prompt, index) => {
-              const Icon = prompt.icon
+              const getIcon = (iconName: string) => {
+                switch (iconName) {
+                  case 'Heart':
+                    return <svg width={14} height={14} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                  case 'Users':
+                    return <svg width={14} height={14} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                  case 'DollarSign':
+                    return <svg width={14} height={14} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" /></svg>
+                  case 'Lightbulb':
+                    return <svg width={14} height={14} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                  default:
+                    return <svg width={14} height={14} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                }
+              }
               return (
                 <motion.button
                   key={prompt.text}
@@ -287,7 +299,7 @@ export default function ChatInterface() {
                   disabled={isLoading}
                   className={`bg-gradient-to-r ${prompt.color} text-white p-2 rounded-lg text-xs font-medium flex items-center space-x-2 hover:scale-105 transition-transform disabled:opacity-50`}
                 >
-                  <Icon size={14} />
+                  {getIcon(prompt.icon)}
                   <span>{prompt.text}</span>
                 </motion.button>
               )
@@ -316,9 +328,9 @@ export default function ChatInterface() {
             className="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? (
-              <Loader2 size={16} className="animate-spin" />
+              <svg width={16} height={16} className="animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
             ) : (
-              <Send size={16} />
+              <svg width={16} height={16} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
             )}
           </motion.button>
         </form>

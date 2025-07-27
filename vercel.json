@@ -23,20 +23,8 @@
   },
   "crons": [
     {
-      "path": "/api/cron?job=manual&sources=product_hunt",
+      "path": "/api/cron",
       "schedule": "0 */6 * * *"
-    },
-    {
-      "path": "/api/cron?job=manual&sources=hacker_news",
-      "schedule": "0 */6 * * *"
-    },
-    {
-      "path": "/api/cron?job=manual&sources=github",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron?job=manual&sources=rss",
-      "schedule": "0 8 * * *"
     }
   ]
 }

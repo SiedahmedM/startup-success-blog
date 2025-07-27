@@ -1,10 +1,9 @@
 import { supabase } from '@/lib/supabase/client'
 import { SuccessStory } from '@/lib/types'
-import StoryCard from '@/components/StoryCard'
-import FeaturedStory from '@/components/FeaturedStory'
-import Header from '@/components/Header'
-import Footer from '@/components/Footer'
-import FloatingChatButton from '@/components/chat/FloatingChatButton'
+import HomePage from '@/components/HomePage'
+
+// Enable static generation with ISR
+export const revalidate = 1800 // 30 minutes
 
 async function getFeaturedStory(): Promise<SuccessStory | null> {
   const { data } = await supabase
@@ -35,57 +34,11 @@ async function getRecentStories(): Promise<SuccessStory[]> {
   return data || []
 }
 
-export default async function HomePage() {
+export default async function Page() {
   const [featuredStory, recentStories] = await Promise.all([
     getFeaturedStory(),
     getRecentStories()
   ])
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {featuredStory && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Featured Story</h2>
-            <FeaturedStory story={featuredStory} />
-          </section>
-        )}
-
-        <section>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Latest Success Stories</h2>
-            <a 
-              href="/stories" 
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              View all stories →
-            </a>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recentStories.map((story) => (
-              <StoryCard key={story.id} story={story} />
-            ))}
-          </div>
-        </section>
-
-        {recentStories.length === 0 && (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No stories available yet
-            </h3>
-            <p className="text-gray-600">
-              Our AI is working hard to discover and analyze startup success stories. 
-              Check back soon!
-            </p>
-          </div>
-        )}
-      </main>
-
-      <Footer />
-      <FloatingChatButton />
-    </div>
-  )
+  return <HomePage featuredStory={featuredStory} recentStories={recentStories} />
 }

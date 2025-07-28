@@ -191,10 +191,10 @@ export class GitHubCollector {
   isSuccessCandidate(repo: GitHubRepo): boolean {
     const hasHighStars = repo.stargazers_count > 100
     const hasGoodDescription = repo.description && repo.description.length > 20
-    const hasSuccessKeywords = repo.description && [
+    const hasSuccessKeywords = repo.description ? [
       'production', 'used by', 'companies', 'enterprise', 'scale',
       'millions', 'popular', 'leading', 'industry', 'standard'
-    ].some(keyword => repo.description!.toLowerCase().includes(keyword))
+    ].some(keyword => repo.description!.toLowerCase().includes(keyword)) : false
 
     const isRecentlyActive = new Date(repo.updated_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     
@@ -202,21 +202,102 @@ export class GitHubCollector {
   }
 
   extractCompanyFromRepo(repo: GitHubRepo): string | null {
+    // First, try to extract company name from description
+    if (repo.description) {
+      // Look for patterns like "by CompanyName", "from CompanyName", "CompanyName's"
+      const companyPatterns = [
+        /by\s+([A-Z][a-zA-Z0-9\s&]+?)(?:\s+inc|\.|,|$)/i,
+        /from\s+([A-Z][a-zA-Z0-9\s&]+?)(?:\s+inc|\.|,|$)/i,
+        /([A-Z][a-zA-Z0-9\s&]+?)'s\s+(?:platform|tool|service|app)/i,
+        /developed\s+by\s+([A-Z][a-zA-Z0-9\s&]+?)(?:\s+inc|\.|,|$)/i,
+        /created\s+by\s+([A-Z][a-zA-Z0-9\s&]+?)(?:\s+inc|\.|,|$)/i,
+        /powered\s+by\s+([A-Z][a-zA-Z0-9\s&]+?)(?:\s+inc|\.|,|$)/i
+      ]
+
+      for (const pattern of companyPatterns) {
+        const match = repo.description.match(pattern)
+        if (match && match[1]) {
+          const companyName = match[1].trim()
+          if (this.isValidCompanyName(companyName)) {
+            return companyName
+          }
+        }
+      }
+
+      // Look for trademark symbols or company indicators
+      const trademarkPatterns = [
+        /([A-Z][a-zA-Z0-9\s&]+?)\s*™/i,
+        /([A-Z][a-zA-Z0-9\s&]+?)\s*®/i,
+        /([A-Z][a-zA-Z0-9\s&]+?)\s*Inc\./i,
+        /([A-Z][a-zA-Z0-9\s&]+?)\s*LLC/i,
+        /([A-Z][a-zA-Z0-9\s&]+?)\s*Corp\./i
+      ]
+
+      for (const pattern of trademarkPatterns) {
+        const match = repo.description.match(pattern)
+        if (match && match[1]) {
+          const companyName = match[1].trim()
+          if (this.isValidCompanyName(companyName)) {
+            return companyName
+          }
+        }
+      }
+    }
+
+    // Check if the repo name itself looks like a company name
+    if (this.isValidCompanyName(repo.name)) {
+      return repo.name
+    }
+
+    // Check if the owner looks like a company (not a personal account)
     const parts = repo.full_name.split('/')
     const owner = parts[0]
     
-    if (owner && !this.isPersonalAccount(owner)) {
+    if (owner && this.isValidCompanyName(owner) && !this.isPersonalAccount(owner)) {
       return owner
     }
     
-    if (repo.description) {
-      const companyMatch = repo.description.match(/by\s+([A-Za-z0-9]+(?:\s+[A-Za-z0-9]+)*)/i)
-      if (companyMatch) {
-        return companyMatch[1]
-      }
-    }
-    
     return null
+  }
+
+  private isValidCompanyName(name: string): boolean {
+    if (!name || name.length < 2 || name.length > 50) {
+      return false
+    }
+
+    // Must start with a letter
+    if (!/^[A-Za-z]/.test(name)) {
+      return false
+    }
+
+    // Must contain at least one letter
+    if (!/[A-Za-z]/.test(name)) {
+      return false
+    }
+
+    // Common words that are not company names
+    const commonWords = [
+      'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with',
+      'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before',
+      'after', 'above', 'below', 'between', 'among', 'within', 'without',
+      'this', 'that', 'these', 'those', 'is', 'are', 'was', 'were', 'be',
+      'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
+      'would', 'could', 'should', 'may', 'might', 'can', 'must', 'shall',
+      'app', 'api', 'sdk', 'tool', 'library', 'framework', 'platform',
+      'service', 'product', 'startup', 'company', 'inc', 'llc', 'corp'
+    ]
+
+    const lowerName = name.toLowerCase()
+    if (commonWords.includes(lowerName)) {
+      return false
+    }
+
+    // Check for personal account patterns
+    if (this.isPersonalAccount(name)) {
+      return false
+    }
+
+    return true
   }
 
   private isPersonalAccount(username: string): boolean {
@@ -224,7 +305,14 @@ export class GitHubCollector {
       /^\w+\d+$/,
       /^(mr|ms|dr)[-_]?\w+/i,
       /\d{4}$/,
-      /^[a-z]+[_-][a-z]+$/
+      /^[a-z]+[_-][a-z]+$/,
+      /^[a-z]+\d+$/,
+      /^[a-z]+[a-z]+\d+$/,
+      /^[a-z]+\.[a-z]+$/,
+      /^[a-z]+_[a-z]+$/,
+      /^[a-z]+-[a-z]+$/,
+      /^[a-z]+\d+[a-z]+$/,
+      /^[a-z]+\d+[a-z]+\d+$/
     ]
     
     return personalIndicators.some(pattern => pattern.test(username))

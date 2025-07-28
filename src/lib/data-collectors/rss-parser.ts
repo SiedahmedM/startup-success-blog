@@ -1,197 +1,215 @@
-import Parser from 'rss-parser'
 import { RSSItem } from '@/lib/types'
 
 export class RSSCollector {
-  private parser: Parser
+  private fundingKeywords = [
+    'raised', 'funding', 'investment', 'series', 'seed', 'venture',
+    'million', 'billion', 'fund', 'capital', 'investment round',
+    'funding round', 'raised funding', 'secured funding'
+  ]
 
-  constructor() {
-    this.parser = new Parser({
-      customFields: {
-        item: [
-          ['media:content', 'mediaContent'],
-          ['media:thumbnail', 'mediaThumbnail'],
-          ['dc:creator', 'creator'],
-          ['content:encoded', 'contentEncoded']
-        ]
+  private successKeywords = [
+    'success', 'growth', 'milestone', 'launch', 'expansion',
+    'acquisition', 'partnership', 'revenue', 'users', 'customers'
+  ]
+
+  async fetchStartupNews(days: number = 7): Promise<RSSItem[]> {
+    const feeds = [
+      'https://techcrunch.com/feed/',
+      'https://venturebeat.com/feed/',
+      'https://www.theverge.com/rss/index.xml',
+      'https://www.wired.com/feed/rss',
+      'https://feeds.feedburner.com/TechCrunch/',
+      'https://www.businessinsider.com/tech/rss',
+      'https://www.forbes.com/technology/feed/',
+      'https://www.axios.com/feeds/feed.rss'
+    ]
+
+    const allNews: RSSItem[] = []
+
+    for (const feedUrl of feeds) {
+      try {
+        const news = await this.parseRSSFeed(feedUrl, days)
+        const filteredNews = this.filterFundingAndSuccessNews(news)
+        allNews.push(...filteredNews)
+      } catch (error) {
+        console.error(`Error fetching RSS from ${feedUrl}:`, error)
       }
+    }
+
+    return allNews
+  }
+
+  async fetchFundingNews(days: number = 7): Promise<RSSItem[]> {
+    const fundingFeeds = [
+      'https://techcrunch.com/tag/funding/feed/',
+      'https://venturebeat.com/category/funding/feed/',
+      'https://www.crunchbase.com/feed/',
+      'https://www.pitchbook.com/news/feed',
+      'https://www.axios.com/tag/funding/feed/'
+    ]
+
+    const allFundingNews: RSSItem[] = []
+
+    for (const feedUrl of fundingFeeds) {
+      try {
+        const news = await this.parseRSSFeed(feedUrl, days)
+        const filteredNews = this.filterFundingNews(news)
+        allFundingNews.push(...filteredNews)
+      } catch (error) {
+        console.error(`Error fetching funding RSS from ${feedUrl}:`, error)
+      }
+    }
+
+    return allFundingNews
+  }
+
+  private filterFundingAndSuccessNews(news: RSSItem[]): RSSItem[] {
+    return news.filter(item => {
+      const content = `${item.title} ${item.description}`.toLowerCase()
+      
+      // Check for funding keywords
+      const hasFundingKeywords = this.fundingKeywords.some(keyword => 
+        content.includes(keyword)
+      )
+      
+      // Check for success keywords
+      const hasSuccessKeywords = this.successKeywords.some(keyword => 
+        content.includes(keyword)
+      )
+      
+      // Check for funding amounts
+      const hasFundingAmount = /\$?\d+(?:\.\d+)?\s*(?:million|billion|k|m|b)/i.test(content)
+      
+      return hasFundingKeywords || (hasSuccessKeywords && hasFundingAmount)
     })
   }
 
-  private readonly RSS_FEEDS = {
-    techcrunch: {
-      url: 'https://techcrunch.com/feed/',
-      name: 'TechCrunch',
-      category: 'general'
-    },
-    techcrunchStartups: {
-      url: 'https://techcrunch.com/category/startups/feed/',
-      name: 'TechCrunch Startups',
-      category: 'startups'
-    },
-    venturebeat: {
-      url: 'https://venturebeat.com/feed/',
-      name: 'VentureBeat',
-      category: 'general'
-    },
-    theVerge: {
-      url: 'https://www.theverge.com/rss/index.xml',
-      name: 'The Verge',
-      category: 'general'
-    },
-    producthunt: {
-      url: 'https://www.producthunt.com/feed',
-      name: 'Product Hunt',
-      category: 'products'
-    },
-    indiehackers: {
-      url: 'https://www.indiehackers.com/feed.xml',
-      name: 'Indie Hackers',
-      category: 'startups'
-    },
-    hackernoon: {
-      url: 'https://hackernoon.com/feed',
-      name: 'Hacker Noon',
-      category: 'tech'
-    },
-    startupGrind: {
-      url: 'https://medium.com/feed/startup-grind',
-      name: 'Startup Grind',
-      category: 'startups'
-    }
+  private filterFundingNews(news: RSSItem[]): RSSItem[] {
+    return news.filter(item => {
+      const content = `${item.title} ${item.description}`.toLowerCase()
+      
+      // Must have funding keywords
+      const hasFundingKeywords = this.fundingKeywords.some(keyword => 
+        content.includes(keyword)
+      )
+      
+      // Must have funding amounts
+      const hasFundingAmount = /\$?\d+(?:\.\d+)?\s*(?:million|billion|k|m|b)/i.test(content)
+      
+      return hasFundingKeywords && hasFundingAmount
+    })
   }
 
-  async fetchFeed(feedKey: keyof typeof this.RSS_FEEDS): Promise<RSSItem[]> {
-    const feed = this.RSS_FEEDS[feedKey]
-    
+  async parseRSSFeed(feedUrl: string, days: number = 7): Promise<RSSItem[]> {
     try {
-      const parsedFeed = await this.parser.parseURL(feed.url)
-      
-      return parsedFeed.items.map(item => ({
-        title: item.title || '',
-        link: item.link || '',
-        description: this.cleanDescription(item.contentSnippet || item.summary || ''),
-        pubDate: item.pubDate || item.isoDate || '',
-        categories: item.categories || [],
-        creator: (item as any).creator || parsedFeed.title || feed.name,
-        content: this.cleanContent((item as any).contentEncoded || item.content || ''),
-        source: feed.name
-      }))
+      const response = await fetch(feedUrl, {
+        headers: {
+          'User-Agent': 'StartupSuccessBot/1.0'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`RSS feed error: ${response.status}`)
+      }
+
+      const text = await response.text()
+      return this.parseRSSContent(text, days)
     } catch (error) {
-      console.error(`Error fetching RSS feed ${feedKey}:`, error)
+      console.error(`Error parsing RSS feed ${feedUrl}:`, error)
       return []
     }
   }
 
-  async fetchAllFeeds(): Promise<RSSItem[]> {
-    const allItems: RSSItem[] = []
-    
-    for (const feedKey of Object.keys(this.RSS_FEEDS) as Array<keyof typeof this.RSS_FEEDS>) {
-      try {
-        const items = await this.fetchFeed(feedKey)
-        allItems.push(...items)
-        
-        await new Promise(resolve => setTimeout(resolve, 1000))
-      } catch (error) {
-        console.error(`Error fetching feed ${feedKey}:`, error)
-      }
-    }
-    
-    return this.deduplicateItems(allItems)
-  }
+  private parseRSSContent(rssText: string, days: number): RSSItem[] {
+    const items: RSSItem[] = []
+    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
 
-  async fetchStartupNews(days: number = 7): Promise<RSSItem[]> {
-    const startupFeeds: Array<keyof typeof this.RSS_FEEDS> = [
-      'techcrunchStartups',
-      'indiehackers',
-      'startupGrind'
-    ]
-    
-    const allItems: RSSItem[] = []
-    
-    for (const feedKey of startupFeeds) {
-      try {
-        const items = await this.fetchFeed(feedKey)
-        allItems.push(...items)
-        
-        await new Promise(resolve => setTimeout(resolve, 1000))
-      } catch (error) {
-        console.error(`Error fetching startup feed ${feedKey}:`, error)
-      }
-    }
-    
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - days)
-    
-    return allItems.filter(item => {
-      const itemDate = new Date(item.pubDate)
-      return itemDate > cutoffDate && this.isStartupRelated(item)
-    })
-  }
-
-  async searchByKeywords(keywords: string[], days: number = 30): Promise<RSSItem[]> {
-    const allItems = await this.fetchAllFeeds()
-    
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - days)
-    
-    return allItems.filter(item => {
-      const itemDate = new Date(item.pubDate)
-      if (itemDate < cutoffDate) return false
+    try {
+      // Simple XML parsing for RSS
+      const itemMatches = rssText.match(/<item>([\s\S]*?)<\/item>/g)
       
-      const searchText = `${item.title} ${item.description} ${item.content}`.toLowerCase()
-      return keywords.some(keyword => 
-        searchText.includes(keyword.toLowerCase())
-      )
-    })
+      if (itemMatches) {
+        for (const itemMatch of itemMatches) {
+          const title = this.extractTag(itemMatch, 'title')
+          const description = this.extractTag(itemMatch, 'description')
+          const link = this.extractTag(itemMatch, 'link')
+          const pubDate = this.extractTag(itemMatch, 'pubDate')
+          
+          if (title && description && link) {
+            const publishDate = new Date(pubDate || Date.now())
+            
+            if (publishDate >= cutoffDate) {
+              items.push({
+                title: this.cleanText(title),
+                description: this.cleanText(description),
+                link,
+                pubDate: publishDate.toISOString(),
+                source: 'rss'
+              })
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing RSS content:', error)
+    }
+
+    return items
   }
 
-  async fetchFundingNews(days: number = 30): Promise<RSSItem[]> {
-    const fundingKeywords = [
-      'raised', 'funding', 'series a', 'series b', 'series c', 'seed round',
-      'venture capital', 'investment', 'valuation', 'million', 'billion',
-      'unicorn', 'ipo', 'acquisition', 'acquired', 'exit'
-    ]
-    
-    return this.searchByKeywords(fundingKeywords, days)
+  private extractTag(content: string, tag: string): string | null {
+    const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i')
+    const match = content.match(regex)
+    return match ? match[1].trim() : null
   }
 
-  isStartupRelated(item: RSSItem): boolean {
-    const startupKeywords = [
-      'startup', 'entrepreneur', 'founder', 'co-founder', 'tech company',
-      'saas', 'platform', 'app launch', 'product launch', 'mvp',
-      'venture', 'innovation', 'disrupt', 'scale', 'growth hack'
-    ]
-    
-    const searchText = `${item.title} ${item.description}`.toLowerCase()
-    return startupKeywords.some(keyword => searchText.includes(keyword))
+  private cleanText(text: string): string {
+    return text
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/&[a-zA-Z]+;/g, ' ') // Remove HTML entities
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim()
   }
 
   isSuccessCandidate(item: RSSItem): boolean {
-    const successKeywords = [
-      'raised', 'funding', 'million', 'billion', 'unicorn', 'ipo',
-      'acquisition', 'acquired', 'breakthrough', 'milestone', 'success',
-      'profitable', 'revenue', 'growth', 'expansion', 'exit',
-      'valuation', 'series', 'round', 'investment'
+    const content = `${item.title} ${item.description}`.toLowerCase()
+    
+    // Check for funding amounts ($500K+)
+    const fundingMatch = content.match(/\$?(\d+(?:\.\d+)?)\s*(?:million|billion|k|m|b)/i)
+    if (fundingMatch) {
+      let amount = parseFloat(fundingMatch[1])
+      if (content.includes('million')) amount *= 1000000
+      if (content.includes('billion')) amount *= 1000000000
+      if (content.includes('k')) amount *= 1000
+      
+      return amount >= 500000 // $500K minimum
+    }
+    
+    // Check for success indicators
+    const successIndicators = [
+      'raised', 'funding', 'investment', 'series', 'seed',
+      'growth', 'milestone', 'launch', 'expansion', 'acquisition'
     ]
     
-    const searchText = `${item.title} ${item.description}`.toLowerCase()
-    return successKeywords.some(keyword => searchText.includes(keyword))
+    return successIndicators.some(indicator => content.includes(indicator))
   }
 
   extractCompanyName(item: RSSItem): string | null {
+    const content = `${item.title} ${item.description}`
+    
+    // Look for company names in quotes or after "raised" keywords
     const patterns = [
-      /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:raised|announces|launches|acquired)/,
-      /^([^:]+):/,
-      /([A-Z][a-z]+)\s+CEO/,
-      /startup\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/i
+      /"([^"]+)"\s+(?:raised|secured|announced)/i,
+      /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:raised|secured|announced)/i,
+      /(?:raised|secured|announced)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/i
     ]
     
     for (const pattern of patterns) {
-      const match = item.title.match(pattern)
+      const match = content.match(pattern)
       if (match && match[1]) {
-        const name = match[1].trim()
-        if (name.length > 2 && name.length < 50 && !this.isCommonWord(name)) {
-          return name
+        const companyName = match[1].trim()
+        if (companyName.length > 2 && companyName.length < 50) {
+          return companyName
         }
       }
     }
@@ -199,59 +217,32 @@ export class RSSCollector {
     return null
   }
 
-  private cleanDescription(description: string): string {
-    return description
-      .replace(/<[^>]*>/g, '')
-      .replace(/&[^;]+;/g, '')
-      .trim()
-      .substring(0, 500)
-  }
-
-  private cleanContent(content: string): string {
-    return content
-      .replace(/<[^>]*>/g, '')
-      .replace(/&[^;]+;/g, '')
-      .trim()
-      .substring(0, 2000)
-  }
-
-  private deduplicateItems(items: RSSItem[]): RSSItem[] {
-    const seen = new Set<string>()
-    return items.filter(item => {
-      const key = `${item.title}-${item.link}`
-      if (seen.has(key)) {
-        return false
-      }
-      seen.add(key)
-      return true
-    })
-  }
-
-  private isCommonWord(word: string): boolean {
-    const commonWords = [
-      'The', 'This', 'That', 'With', 'From', 'Here', 'How', 'Why',
-      'What', 'When', 'Where', 'New', 'Best', 'Top', 'Most', 'All'
-    ]
-    return commonWords.includes(word)
-  }
-
-  async fetchCustomRSSFeed(url: string, source: string): Promise<RSSItem[]> {
-    try {
-      const parsedFeed = await this.parser.parseURL(url)
+  extractFundingAmount(item: RSSItem): number | null {
+    const content = `${item.title} ${item.description}`
+    const match = content.match(/\$?(\d+(?:\.\d+)?)\s*(?:million|billion|k|m|b)/i)
+    
+    if (match) {
+      let amount = parseFloat(match[1])
+      if (content.includes('million')) amount *= 1000000
+      if (content.includes('billion')) amount *= 1000000000
+      if (content.includes('k')) amount *= 1000
       
-      return parsedFeed.items.map(item => ({
-        title: item.title || '',
-        link: item.link || '',
-        description: this.cleanDescription(item.contentSnippet || item.summary || ''),
-        pubDate: item.pubDate || item.isoDate || '',
-        categories: item.categories || [],
-        creator: (item as any).creator || parsedFeed.title || source,
-        content: this.cleanContent((item as any).contentEncoded || item.content || ''),
-        source
-      }))
-    } catch (error) {
-      console.error(`Error fetching custom RSS feed ${url}:`, error)
-      return []
+      return amount
     }
+    
+    return null
+  }
+
+  extractFundingStage(item: RSSItem): string | null {
+    const content = `${item.title} ${item.description}`.toLowerCase()
+    
+    if (content.includes('seed')) return 'seed'
+    if (content.includes('series a')) return 'series_a'
+    if (content.includes('series b')) return 'series_b'
+    if (content.includes('series c')) return 'series_c'
+    if (content.includes('series d')) return 'series_d'
+    if (content.includes('funding')) return 'funding'
+    
+    return null
   }
 }

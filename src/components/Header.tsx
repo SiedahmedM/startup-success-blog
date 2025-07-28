@@ -35,12 +35,6 @@ export default function Header() {
               Categories
             </Link>
             <Link 
-              href="/funding" 
-              className="text-gray-600 hover:text-gray-900 font-medium"
-            >
-              Funding
-            </Link>
-            <Link 
               href="/about" 
               className="text-gray-600 hover:text-gray-900 font-medium"
             >
@@ -81,12 +75,6 @@ export default function Header() {
                 className="text-gray-600 hover:text-gray-900 font-medium"
               >
                 Categories
-              </Link>
-              <Link 
-                href="/funding" 
-                className="text-gray-600 hover:text-gray-900 font-medium"
-              >
-                Funding
               </Link>
               <Link 
                 href="/about" 

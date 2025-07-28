@@ -18,7 +18,7 @@ export class AIContentGenerator {
     scraped?: any[]
     companyName: string
   }): Promise<AIAnalysisResult> {
-    const prompt = this.buildAnalysisPrompt(data)
+    const prompt = this.buildEnhancedAnalysisPrompt(data)
 
     try {
       const response = await this.openai.chat.completions.create({
@@ -26,23 +26,33 @@ export class AIContentGenerator {
         messages: [
           {
             role: 'system',
-            content: `You are an expert startup analyst and content writer. Analyze the provided data about a startup and determine if it represents a success story worth featuring. Be objective and look for concrete evidence of success, growth, funding, or significant milestones.
+            content: `You are an expert startup analyst and content writer specializing in funding rounds, growth milestones, and startup success stories. Focus on startups that have raised at least $500,000 in the past 2 years.
 
 Your response must be valid JSON with this exact structure:
 {
   "isSuccessStory": boolean,
   "confidence": number (0-1),
-  "title": "string",
-  "summary": "string (100-200 words)",
-  "content": "string (500-1500 words)",
+  "title": "string (compelling headline about funding/growth)",
+  "summary": "string (100-200 words highlighting key achievements)",
+  "content": "string (500-1500 words with detailed analysis)",
   "tags": ["string"],
-  "storyType": "success" | "funding" | "milestone" | "pivot",
+  "storyType": "funding" | "milestone" | "success" | "pivot",
   "keyMetrics": {
     "funding": number | null,
     "userGrowth": number | null,
     "revenue": number | null
   }
-}`
+}
+
+Focus on:
+- Funding rounds ($500K+ in past 2 years)
+- Growth milestones and user traction
+- Product launches and market validation
+- Team expansion and hiring
+- Strategic partnerships and acquisitions
+- Revenue growth and business model validation
+
+Be specific about amounts, dates, and concrete achievements.`
           },
           {
             role: 'user',
@@ -50,7 +60,7 @@ Your response must be valid JSON with this exact structure:
           }
         ],
         temperature: 0.7,
-        max_tokens: 2000
+        max_tokens: 2500
       })
 
       const content = response.choices[0]?.message?.content
@@ -68,6 +78,149 @@ Your response must be valid JSON with this exact structure:
     } catch (error) {
       console.error('Error calling OpenAI API:', error)
       return this.createFallbackResult(data.companyName)
+    }
+  }
+
+  async generateFundingStory(companyName: string, fundingAmount: number, fundingStage: string, additionalData?: any): Promise<AIAnalysisResult> {
+    // Don't generate stories for $0 funding
+    if (fundingAmount < 500000) {
+      return {
+        isSuccessStory: false,
+        confidence: 0,
+        title: '',
+        summary: '',
+        content: '',
+        tags: [],
+        storyType: 'funding',
+        keyMetrics: {
+          funding: null,
+          userGrowth: null,
+          revenue: null
+        }
+      }
+    }
+
+    const fundingAmountM = (fundingAmount / 1000000).toFixed(1)
+    
+    // Extract funding date and current valuation from additional data
+    const fundingDate = additionalData?.funding_date || additionalData?.founded_date
+    const currentValuation = additionalData?.current_valuation
+    const valuationDate = additionalData?.valuation_date
+    
+    // Format funding date for title
+    let titleDate = ''
+    if (fundingDate) {
+      const date = new Date(fundingDate)
+      const month = (date.getMonth() + 1).toString().padStart(2, '0')
+      const year = date.getFullYear()
+      titleDate = ` (${month}/${year})`
+    }
+
+    const prompt = `Create a compelling funding story for ${companyName} that has raised $${fundingAmountM}M in ${fundingStage} funding.
+
+Additional Context: ${JSON.stringify(additionalData || {})}
+
+Create a detailed, professional story that includes:
+- Company background and mission
+- Funding round details and investors
+- Current valuation and market position
+- Growth metrics and achievements
+- Market opportunity and competitive advantage
+- Future plans and vision
+
+Make it engaging and informative for startup enthusiasts and investors.`
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert startup journalist specializing in funding announcements and startup success stories. Write compelling, accurate, and engaging content.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.6,
+        max_tokens: 2000
+      })
+
+      const content = response.choices[0]?.message?.content
+      if (!content) {
+        throw new Error('No response from OpenAI')
+      }
+
+      return {
+        isSuccessStory: true,
+        confidence: 0.9,
+        title: `${companyName} Secures $${fundingAmountM}M in ${fundingStage} Funding${titleDate}`,
+        summary: `${companyName} has successfully raised $${fundingAmountM} million in ${fundingStage.toLowerCase()} funding, demonstrating strong market validation and growth potential.`,
+        content: content,
+        tags: ['startup', 'funding', 'success', fundingStage.toLowerCase()],
+        storyType: 'funding',
+        keyMetrics: {
+          funding: fundingAmount,
+          userGrowth: null,
+          revenue: null
+        }
+      }
+    } catch (error) {
+      console.error('Error generating funding story:', error)
+      return this.createFallbackResult(companyName)
+    }
+  }
+
+  async generateGrowthStory(companyName: string, growthMetrics: any): Promise<AIAnalysisResult> {
+    const prompt = `Create a compelling growth story for ${companyName} based on the following metrics:
+
+Growth Metrics: ${JSON.stringify(growthMetrics)}
+
+Focus on:
+- User growth and engagement
+- Revenue milestones
+- Product development achievements
+- Market expansion
+- Team growth and hiring
+
+Make it engaging and highlight the startup's journey to success.`
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert startup analyst focusing on growth stories and milestone achievements.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      })
+
+      const content = response.choices[0]?.message?.content
+      if (!content) {
+        throw new Error('No response from OpenAI')
+      }
+
+      return {
+        isSuccessStory: true,
+        confidence: 0.85,
+        title: `${companyName} Achieves Remarkable Growth Milestone`,
+        summary: `${companyName} has demonstrated exceptional growth and market traction, positioning itself as a rising star in its industry.`,
+        content: content,
+        tags: ['startup', 'growth', 'success', 'milestone'],
+        storyType: 'milestone',
+        keyMetrics: growthMetrics
+      }
+    } catch (error) {
+      console.error('Error generating growth story:', error)
+      return this.createFallbackResult(companyName)
     }
   }
 
@@ -225,48 +378,46 @@ Return an improved version that seamlessly integrates the new information while 
     }
   }
 
-  private buildAnalysisPrompt(data: any): string {
-    const sections = []
-
+  private buildEnhancedAnalysisPrompt(data: any): string {
+    const sources = []
+    
     if (data.productHunt?.length) {
-      sections.push(`Product Hunt Data:
-${JSON.stringify(data.productHunt, null, 2)}`)
+      sources.push(`Product Hunt Data: ${JSON.stringify(data.productHunt.slice(0, 3))}`)
     }
-
+    
     if (data.hackerNews?.length) {
-      sections.push(`Hacker News Data:
-${JSON.stringify(data.hackerNews, null, 2)}`)
+      sources.push(`Hacker News Data: ${JSON.stringify(data.hackerNews.slice(0, 3))}`)
     }
-
+    
     if (data.github?.length) {
-      sections.push(`GitHub Data:
-${JSON.stringify(data.github, null, 2)}`)
+      sources.push(`GitHub Data: ${JSON.stringify(data.github.slice(0, 3))}`)
     }
-
+    
     if (data.rss?.length) {
-      sections.push(`RSS/News Data:
-${JSON.stringify(data.rss, null, 2)}`)
+      sources.push(`RSS Data: ${JSON.stringify(data.rss.slice(0, 3))}`)
     }
-
+    
     if (data.scraped?.length) {
-      sections.push(`Scraped Data:
-${JSON.stringify(data.scraped, null, 2)}`)
+      sources.push(`Scraped Data: ${JSON.stringify(data.scraped.slice(0, 3))}`)
     }
 
-    return `Analyze this data about ${data.companyName} to determine if it represents a startup success story:
+    return `Analyze the following data about ${data.companyName} and determine if it represents a quality startup success story worth featuring.
 
-${sections.join('\n\n')}
+Focus on startups that have:
+- Raised $500,000+ in funding in the past 2 years
+- Demonstrated significant growth or traction
+- Launched successful products or services
+- Achieved notable milestones or partnerships
+- Showed strong market validation
 
-Look for evidence of:
-- Funding rounds or investment
-- User growth or market traction
-- Product launches or milestones
-- Recognition or awards
-- Revenue growth
-- Team expansion
-- Market validation
+Data Sources:
+${sources.join('\n\n')}
 
-Determine if this is a genuine success story and create compelling content if it is.`
+Company Name: ${data.companyName}
+
+Please analyze this data and create a compelling success story if the startup meets the quality criteria. Focus on concrete achievements, specific metrics, and clear evidence of success.
+
+If the startup doesn't meet the quality criteria, set isSuccessStory to false and provide a brief explanation.`
   }
 
   private validateAndSanitizeResult(result: AIAnalysisResult): AIAnalysisResult {

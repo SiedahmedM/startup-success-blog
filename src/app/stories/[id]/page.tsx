@@ -139,11 +139,11 @@ export default async function StoryPage({ params }: StoryPageProps) {
                     className="w-12 h-12 object-contain rounded"
                   />
                 )}
-                <div>
+                <div className="flex-1">
                   <h2 className="text-lg font-semibold text-gray-900">
                     {startup.name}
                   </h2>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
                     {startup.industry && <span>{startup.industry}</span>}
                     {startup.location && (
                       <>
@@ -165,6 +165,15 @@ export default async function StoryPage({ params }: StoryPageProps) {
                       </>
                     )}
                   </div>
+                  {startup.current_valuation && (
+                    <div className="flex items-center text-sm">
+                      <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                      </svg>
+                      <span className="font-medium text-green-600">Current Valuation: </span>
+                      <span className="font-semibold text-gray-900 ml-1">${(startup.current_valuation / 1000000).toFixed(1)}M</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -204,17 +213,21 @@ export default async function StoryPage({ params }: StoryPageProps) {
               {story.sources && story.sources.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-900 mb-2">Sources:</h3>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {story.sources.map((source: any, index: number) => (
-                      <a
-                        key={index}
-                        href={source.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        {source.type}: {source.url}
-                      </a>
+                      <div key={index} className="flex items-center space-x-2">
+                        <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          {source.type === 'funding_scraped' ? 'Funding Announcement' : source.type}: {source.url}
+                        </a>
+                      </div>
                     ))}
                   </div>
                 </div>

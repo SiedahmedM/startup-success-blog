@@ -44,4 +44,6 @@ Keep the service role key and OpenAI key on the server.
 
 This remains an ingestion and publishing prototype. Some collectors fall back to sample records, valuation updates use a static list, and some story paths use fixed confidence values. Those scores should not be read as measured factual accuracy.
 
+The homepage runs in development, but a production build currently fails on an extra closing brace in [`generate-missing-stories/route.ts`](src/app/api/generate-missing-stories/route.ts).
+
 The cron and several maintenance routes lack application-level authorization. They need access controls before public deployment. There is no automated test suite, and the JavaScript Next.js config skips type and lint errors during builds. These files describe the intended deployment setup, not a verified running service.
